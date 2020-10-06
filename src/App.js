@@ -1,14 +1,37 @@
-import React, {useState, useEffect, useReducer} from 'react';
+import React, { useState, useEffect, useReducer, useRef } from 'react';
 import logo from './logo.svg';
 import './App.css';
+import Grid from './component/Grid';
 
-let move;
+let move = [0, 1];
+const gridRow = 30;
+const gridCol = 30;
+
+function useInterval(callback, delay) {
+  const savedCallback = useRef();
+
+  // Remember the latest callback.
+  useEffect(() => {
+    savedCallback.current = callback;
+  }, [callback]);
+
+  // Set up the interval.
+  useEffect(() => {
+    function tick() {
+      savedCallback.current();
+    }
+    if (delay !== null) {
+      let id = setInterval(tick, delay);
+      return () => clearInterval(id);
+    }
+  }, [delay]);
+}
 
 function initGrid() {
   const grid = [];
-  for (let row = 0; row < 30; row++) {
+  for (let row = 0; row < gridRow; row++) {
     const cols = [];
-    for (let col = 0; col < 30; col ++) {
+    for (let col = 0; col < gridCol; col ++) {
       cols.push({
         row,
         col
@@ -24,16 +47,11 @@ function initState() {
   return {
     grid,
     snake: {
-      head: {
-        row: 15,
-        col: 15
-      },
-      tail: []
+      head: [[15,15]],
+      tail: [[15,14], [15, 13]]
     },
-    food: {
-      row: Math.floor(Math.random() * 5),
-      col: Math.floor(Math.random() * 5),
-    },
+    food: // need to make sure it's not part of snake
+    [generateFood()],
     score: 0,
     showGrid: true,
     lost: false,
@@ -45,21 +63,20 @@ function initState() {
 const handleKey = (e) => {
   switch (e.key) {
     case "ArrowDown":
-      console.log("ArrowDown")
+      move = [1, 0];
       break;
     case "ArrowUp":
       // Do something for "up arrow" key press.
-      console.log("ArrowUp")
+      move = [-1, 0];
       break;
     case "ArrowLeft":
       // Do something for "left arrow" key press.
-      console.log("ArrowLeft")
+      move = [0, -1];
       break;
     case "ArrowRight":
       // Do something for "right arrow" key press.
-      console.log("ArrowRight")
+      move = [0, 1];
       break;
-    case "Esc": // IE/Edge specific value
     case "Escape":
       // Do something for "esc" key press.
       break;
@@ -68,71 +85,84 @@ const handleKey = (e) => {
   }
 }
 
+const generateFood = () => {
+  return [
+    Math.floor(Math.random() * 5), // row
+    Math.floor(Math.random() * 5), // col
+  ];
+}
+
 const reducer = (state, action) => {
   switch (action.type) {
-    case 'game_lost':
-      return {
-        ...state,
-        showGrid: state.showGrid,
-        lost: true,
-        message: 'Press <space> or touch/click to start a new game',
-        inprogress: false,
-      }
+    case 'game_over':
+      alert('You Lost')
+      break;
     case 'update':
       return {
         ...state,
-        ...action.newstate
+        ...action.payload
       }
-    case 'toggle_grid':
-      return {
-        ...state,
-        showGrid: !state.showGrid
-      };
-
-    case 'restart':
-      let newState = {
-        ...state,
-        message: 'Game in progress',
-        inprogress: true,
-        lost: false,
-        snake: {
-          ...state.snake,
-          head: {
-            row: Math.floor(random() * 5),
-            col: Math.floor(random() * 5),
-          },
-          tail: [],
-        }
-      }
-      return newState;
     default: {
      return state;
   }
 }
 };
 
+const checkWallBoundry = (i, j) => {
+  if (i < 0 || i >= gridRow || j < 0 || j >= gridCol) {
+    return true;
+  }
+  return false;
+} 
 
-function random() {
-  return Math.random();
+const checkTail = (tailArray, i, j) => {
+  return tailArray.some(([tailI, tailJ]) => {
+    if (i === tailI && j === tailJ) {
+      return true;
+    }
+    return false;
+  });
 }
 
 function App() {
-  const [state, dispatch] = useReducer(null, initState());
-  console.log('state: ', state)
+  const [state, dispatch] = useReducer(reducer, initState());
 
-  const drawGrid = () => {
-    const { grid } = state
+  useInterval(() => {
+    const newState = {};
+    // calculate new head position
+    const headI = state.snake.head[0][0];
+    const headJ = state.snake.head[0][1];
 
-    return (
-      grid.map((row, i) => {
-        return row.map(cell => {
-          return <div key={cell.row+cell.col} className="cell cell-border" />
-        })
-      })
-    )
-  }
+    const newHeadI = headI + move[0];
+    const newHeadJ = headJ + move[1];
 
-  
+    if (checkWallBoundry(newHeadI, newHeadJ)) {
+      dispatch('game_over');
+      return;
+    }
+
+    if (checkTail(state.snake.tail, newHeadI, newHeadJ)) {
+      dispatch('game_over');
+      return;
+    }
+
+    const tail = state.snake.tail;
+    tail.unshift(state.snake.head[0]);
+
+    if (headI === state.food[0][0] && headJ === state.food[0][1]) {
+      newState['food'] = [generateFood()];
+    } else {
+      tail.pop();
+    }
+
+    const newSnake = {
+      tail,
+      head: [[newHeadI, newHeadJ]],
+    }
+    
+    dispatch({type: 'update', payload: {...newState, snake: newSnake}});
+  }, 500);
+
   useEffect(() => {
     document.addEventListener('keydown', handleKey);
     return () => {
@@ -144,10 +174,14 @@ function App() {
 
   return (
     <div className="App">
-      <div class="message">{message}</div>
+      <div className="message">{message}</div>
       <div className="grid-container">
         <div className="grid">
-          { drawGrid() }
+          <Grid
+            grid={state.grid}
+            snake={state.snake}
+            food={state.food}
+          />
         </div>
       </div>
     </div>

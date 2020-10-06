@@ -34,6 +34,18 @@ html, body {
   border: 1px solid #001b29;
 }
 
+.cell-snake {
+  background-color: grey;
+}
+
+.cell-food {
+  background-color: red
+}
+
+.cell-head {
+  background-color: yellow
+}
+
 .message {
   font-family: 'Courier';
   color: #eae2b7;
