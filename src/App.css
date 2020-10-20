@@ -44,18 +44,21 @@ html, body {
 }
 
 .cell-food {
-  background-color: red;
   z-index: 1;
+  text-align: center;
+  vertical-align: middle;
+  background: rgba(255,255,255,1);
+  font-size: 30px;
+  display: inline-block;
 }
 
 .cell-head {
-  position: relative;
-  z-index: 10;
   background-color: #80FFDB;
 }
 
 .message {
   font-family: 'Courier';
   color: #eae2b7;
-  margin-bottom: 16px;
+  margin: 10px auto;
+  text-align: center;
 }

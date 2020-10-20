@@ -1,15 +1,6 @@
-import React, { useState, useEffect, useReducer, useRef } from 'react';
-import logo from './logo.svg';
+import React, { useEffect, useReducer, useRef } from 'react';
 import './App.css';
 import Grid from './component/Grid';
-
-/**
- * TODO: count score (BONUS: save high scores in localStorage)
- * TODO: game over message not showing
- * TODO: restart after death (without browser refresh)
- * TODO: food disappear earlier
- * TODO: make head of snake easier to see
- */
 
 const direction = {
   UP: [-1, 0],
@@ -58,19 +49,17 @@ function initGrid() {
 }
 
 function initState() {
+  const initialSnake = {
+    head: [[7,8]],
+    tail: [[7,7], [7, 6]]
+  }
   const grid = initGrid();
   return {
     grid,
-    snake: {
-      head: [[7,8]],
-      tail: [[7,7], [7, 6]]
-    },
-    food: // need to make sure it's not part of snake
-    [generateFood({
-      head: [[7,8]],
-      tail: [[7,7], [7, 6]]
-    })],
+    snake: initialSnake,
+    food: [[]],
     score: 0,
+    highScore: localStorage.getItem('highScore') || 0,
     showGrid: true,
     lost: false,
     message: 'Press <space> to start. Good luck!',
@@ -81,7 +70,6 @@ function initState() {
 }
 
 const handleKey = (e, state, dispatch) => {
-  const newState = {};
   switch (e.code) {
     case "ArrowDown":
       if (move !== direction.UP) {
@@ -107,10 +95,18 @@ const handleKey = (e, state, dispatch) => {
       }
       break;
     case "Space":
-      console.log('space pressed')
+      console.log(state.highScore)
       if (!state.gameInProgress) {
         // start game some how
-        dispatch({type: 'update', payload: {...newState, time: 200, gameInProgress: true }});
+        const { snake } = initState()
+        dispatch({type: 'update', payload: {
+          ...initState(),
+          time: 200,
+          gameInProgress: true,
+          highScore: localStorage.getItem('highScore') || 0,
+          food: [generateFood(snake)]
+        }
+        });
       }
       break;
     case "Escape":
@@ -153,7 +149,10 @@ const reducer = (state, action) => {
     case 'game_over':
       return {
         ...state,
-        message: "you lost"
+        message: "you lost, press <space> to start a new game",
+        time: null,
+        gameInProgress: false,
+        score: 0
       }
     case 'update':
       return {
@@ -195,12 +194,13 @@ function App() {
     const newHeadJ = headJ + move[1];
 
     if (checkWallBoundry(newHeadI, newHeadJ)) {
-      dispatch('game_over');
+      console.log('checkWallBoundry')
+      dispatch({type: 'game_over'});
       return;
     }
 
     if (checkTail(state.snake.tail, newHeadI, newHeadJ)) {
-      dispatch('game_over');
+      dispatch({type: 'game_over'});
       return;
     }
 
@@ -208,7 +208,15 @@ function App() {
     tail.unshift(state.snake.head[0]);
 
     if (headI === state.food[0][0] && headJ === state.food[0][1]) {
+      console.log('new food generated')
       newState['food'] = [generateFood(state.snake)];
+      newState['score'] = state.score+1;  
+      const localStorageHighScore = localStorage.getItem('highScore') || 0
+      newState.highScore = localStorageHighScore
+      if (newState.score > localStorageHighScore) {
+        localStorage.setItem('highScore', newState.score);
+        newState.highScore = newState.score
+      }
     } else {
       tail.pop();
     }
@@ -239,6 +247,10 @@ function App() {
             food={state.food}
           />
         </div>
+      </div>
+      <div className="message">
+        Current Score: {state.score}<br />
+        High Score: {state.highScore}
       </div>
     </div>
   );

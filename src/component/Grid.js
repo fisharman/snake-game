@@ -19,7 +19,7 @@ const Grid = (props) => {
                 }
                 // isFood
                 if(coordMatch(props.food, i, j)) {
-                    return <div key={cell.row+cell.col} className="cell cell-border cell-food" style={{ left: cell.row * 40, top: cell.col * 40 }} />
+                    return <div key={cell.row+cell.col} className="cell cell-border cell-food" style={{ left: cell.row * 40, top: cell.col * 40 }}>🐀</div>
                 }
                 // isHead
                 if (coordMatch(props.snake.head, i, j)){ 
