@@ -159,6 +159,18 @@ const reducer = (state, action) => {
         ...state,
         ...action.payload
       }
+    case 'update_score':
+      const localStorageHighScore = localStorage.getItem('highScore') || 0
+      let highScore = localStorageHighScore
+      if (state.score + 1 > localStorageHighScore) {
+        localStorage.setItem('highScore', state.score +1);
+        highScore = state.score + 1
+      }
+      return {
+        ...state,
+        score: state.score+1,
+        highScore 
+      }
     default: {
      return state;
   }
@@ -210,13 +222,7 @@ function App() {
     if (headI === state.food[0][0] && headJ === state.food[0][1]) {
       console.log('new food generated')
       newState['food'] = [generateFood(state.snake)];
-      newState['score'] = state.score+1;  
-      const localStorageHighScore = localStorage.getItem('highScore') || 0
-      newState.highScore = localStorageHighScore
-      if (newState.score > localStorageHighScore) {
-        localStorage.setItem('highScore', newState.score);
-        newState.highScore = newState.score
-      }
+      dispatch({type: 'update_score'});
     } else {
       tail.pop();
     }
